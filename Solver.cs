@@ -6,15 +6,17 @@ namespace csharp_lab1
 {
     public class Solver
     {
-        public static void Solv(double x0, Func<double, double> f)
-        {
-
-            int 
-
-        }
-
+        /// <summary>
+        /// Точность решения
+        /// </summary>
         public static double EPS = 1e-3;
+        /// <summary>
+        /// Количество итераций
+        /// </summary>
         public static int LastIters;
+        /// <summary>
+        /// Количество вычисления функции
+        /// </summary>
         public static int FuncIters;
         public static List<StepInfo> LastSteps = new List<StepInfo>();
 
@@ -62,15 +64,211 @@ namespace csharp_lab1
                 return new Matrix( a.x * b.x, a.y * b.x, a.x*b.y, a.y * b.y);
             }
         }
+        #region lab4
 
+        /// <summary>
+        /// рандомный Алгоритм из лабораторной работы #4
+        /// </summary>
+        /// <param name="func"> функция где ищится минимум </param>
+        /// <param name="m"> Количество попыток найти минимум </param>
+        /// <returns> Найденный минимум </returns>
+        static public Point RandomAlgaritm(Func<Point, double> func, int m)
+        {
+            FuncIters = 1;
+            Random rand = new Random();
+            Point min = new Point(rand.NextDouble() * 20 - 10, rand.NextDouble() * 20 - 10);
+            double fmin = func(min);
+
+            Point y;
+
+            int n = 0;
+
+            while (n < m)
+            {
+                y = new Point(rand.NextDouble() * 20 - 10, rand.NextDouble() * 20 - 10);
+                FuncIters++;
+                if (fmin < func(y))
+                    n++;
+                else
+                {
+                    min = y;
+                    fmin = func(y);
+                    //n = 0;
+                }
+                Console.Write($"\r {n} из {m}  -   {100.0 * n / m}%  F: {fmin}                                     ");
+            }
+            Console.WriteLine();
+            Console.WriteLine($"N: {m}   Точность решения: {-9.17170610839834 - func(min)}  Func iter: {FuncIters}");
+            return min;
+        }
+
+        /// <summary>
+        /// Алгоритм 1 из лабораторной работы #4
+        /// </summary>
+        /// <param name="func"> функция где ищится минимум </param>
+        /// <param name="m"> Количество попыток найти минимум </param>
+        /// <param name="h"> Штрафные функции </param>
+        /// <returns> Найденный минимум </returns>
+        static public Point Algoritm1(Func<Point, double> func, int m, List<Func<Point, double>> h)
+        {
+            FuncIters = 0;
+            Random rand = new Random();
+            Point x = new Point(rand.NextDouble()* 20 - 10, rand.NextDouble() * 20 - 10);
+            Point min = Solve_Penalty_function(func, h, x);
+            //Point min = MSG_Fletchera_Riversa(func, x);
+            Point y;
+            double fmin = func(min);
+            FuncIters++;
+            int n = 0;
+
+            while(n < m)
+            {
+                y = Solve_Penalty_function(func, h, new Point(rand.NextDouble() * 20 - 10, rand.NextDouble() * 20 - 10));
+                //MSG_Fletchera_Riversa(func, new Point(rand.NextDouble() * 20 - 10, rand.NextDouble() * 20 - 10));
+                FuncIters += 2;
+                if ( fmin > func(y))
+                {
+                    min = y;
+                    fmin = func(min);
+                    FuncIters++;
+                }
+                else
+                    n++;
+                Console.Write($"\r {n} из {m}  -   {100.0 * n / m}%  F: {fmin}                                     ");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine($"N: {m}   Точность решения: {-9.17170610839834 - func(min)}  Func iter: {FuncIters}");
+            return min;
+        }
+
+
+        /// <summary>
+        /// Алгоритм 2 из лабораторной работы #4
+        /// </summary>
+        /// <param name="func"> функция где ищится минимум </param>
+        /// <param name="m"> Количество попыток найти минимум </param>
+        /// <param name="h"> Штрафные функции </param>
+        /// <returns> Найденный минимум </returns>
+        static public Point Algoritm2(Func<Point, double> func, int m, List<Func<Point, double>> h)
+        {
+            FuncIters = 0;
+            Random rand = new Random();
+            Point x = new Point(rand.NextDouble() * 20 - 10, rand.NextDouble() * 20 - 10);
+            Point min = Solve_Penalty_function(func, h, x);
+            //Point min = MSG_Fletchera_Riversa(func, x);
+            Point y;
+            double fmin = func(min);
+            FuncIters++;
+
+            int n = 0;
+
+            while (n < m)
+            {
+                y = new Point(rand.NextDouble() * 20 - 10, rand.NextDouble() * 20 - 10);
+                FuncIters++;
+                if (fmin < func(y))
+                    n++;
+                else
+                {
+                    min = Solve_Penalty_function(func, h, y);
+                    fmin = func(min);
+                    FuncIters++;
+                    n = 0;
+                }
+                Console.Write($"\r {n} из {m}  -   {100.0 * n / m}%  F: {fmin}                                       ");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine($"N: {m}   Точность решения: {-9.17170610839834 - func(min)}  Func iter: {FuncIters}");
+            return min;
+        }
+
+        /// <summary>
+        /// Алгоритм 3 Из лаюораторной работы #4
+        /// </summary>
+        /// <param name="func"> Функция где ищится минимум </param>
+        /// <param name="m"> Количество попыток </param>
+        /// <param name="h"> Штрафные функции </param>
+        /// <param name="dx"> Длина шага </param>
+        /// <returns> Найденную точку минимума </returns>
+        static public Point Algoritm3(Func<Point, double> func, int m, List<Func<Point, double>> h, double dx)
+        {
+            Random rand = new Random();
+            FuncIters = 0;
+            Point x = new Point(rand.NextDouble() * 20 - 10, rand.NextDouble() * 20 - 10);
+            Point min = Solve_Penalty_function(func, h, x);
+            Point S = new Point(); // Квадрат x найправления в котором ищим минимум
+            //Point min = MSG_Fletchera_Riversa(func, x);
+            Point y;
+            double fmin = func(min);   //Значение функции в найденном минимуме
+            FuncIters++;
+            int w;
+
+            bool f;         //Показывает вышла ли точка за пределы области
+
+            int n = 0;
+
+            while (n < m)
+            {
+                f = true;
+                S.x = rand.NextDouble() * 2 - 1;
+                S.y = dx * Math.Sqrt(1 - S.x * S.x) *  Math.Sign(rand.NextDouble() - 0.5);
+                S.x *= dx;
+                w = 1;
+
+                do
+                {
+                    // Console.WriteLine($"Func: {fmin},   {func(min + w * S)}");
+                    FuncIters++;
+                    if(fmin > func(min + w * S))
+                    {
+                        min = Solve_Penalty_function(func, h, min + w * S);
+                        fmin = func(min);
+                        FuncIters++;
+                        n = 0;
+                        break;
+                    }
+
+                    for (int i = 0; i < h.Count; i++)
+                        if (h[i](min + w * S) > 0)
+                        {
+                            n++;
+                            f = false;
+                            break;
+                        }
+                    w++;
+                }while (f);
+
+                if (f)
+                    n++;
+
+                Console.Write($"\r {n} из {m}  -   {100.0 * n / m}%  F: {fmin}                                       ");
+                //Console.WriteLine($"Func: {func(min)},   {min.x}, {min.y}");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine($"N: {m}   Точность решения: {-9.17170610839834 - func(min)}  Func iter: {FuncIters}");
+            //Console.WriteLine($"Func: {func(min)}");
+            return min;
+        }
+
+        #endregion
         #region lab3
 
+        /// <summary>
+        /// Метод штрафных функций
+        /// </summary>
+        /// <param name="func">Основная функция(минимум которой мы и должны найти)</param>
+        /// <param name="h">Функции штрафа</param>
+        /// <param name="p0">Начальная точка поиска</param>
+        /// <returns>Минимальное значение в заданной области, ограниченной штрафными функциями</returns>
         static public Point Solve_Penalty_function(Func<Point, double> func, List<Func<Point, double>> h, Point p0 = new Point())
         {
             Point x = p0;
 
-            FuncIters = 0;
-            LastIters = 0;
+            //FuncIters = 0;
+            //LastIters = 0;
             int ped = 22;
 
             //Коэфициент функции штрафа
@@ -80,11 +278,11 @@ namespace csharp_lab1
             List<double> value = new List<double>();
 
             //Коэфициент добавки
-            double w = 10;
+            double w = 2;
 
             for (int i = 0; i < h.Count; i++)
             {
-                r.Add(1);
+                r.Add(15);
                 value.Add(0);
             }
 
@@ -96,7 +294,7 @@ namespace csharp_lab1
                 return func(p) + Penatly;
             };
 
-            Console.WriteLine("i".PadLeft(4) + "".PadLeft(ped) + "(x,y)".PadRight(ped) +  "f(x, y)".PadLeft(ped) + "r".PadLeft(ped));
+            //Console.WriteLine("i".PadLeft(4) + "".PadLeft(ped) + "(x,y)".PadRight(ped) +  "f(x, y)".PadLeft(ped) + "r".PadLeft(ped));
 
             int end;
 
@@ -106,38 +304,45 @@ namespace csharp_lab1
             {
                 end = 0;
                 for (int i = 0; i < h.Count; i++)
-                    r[i] *= 10;// w * value[i];
+                    r[i] *= 2;// w * value[i];
 
-                x = Gause(Q, x);
+                x = Devidona_Fletchera_Paualla_Metod(Q, x); /*MSG_Fletchera_Riversa(Q, x);*/  //Gause(Q, x);
 
                 for (int i = 0; i < h.Count; i++)
                     value[i] = h[i](x);
 
                 LastIters++;
 
-                Console.Write(LastIters.ToString().PadLeft(4) +
-                    x.x.ToString().PadLeft(ped) +
-                    x.y.ToString().PadLeft(ped) +
-                    Q(x).ToString().PadLeft(ped));
+                //Console.Write(LastIters.ToString().PadLeft(4) +
+                //    x.x.ToString().PadLeft(ped) +
+                //    x.y.ToString().PadLeft(ped) +
+                //    Q(x).ToString().PadLeft(ped));
 
-                for (int i = 0; i < h.Count; i++)
-                    Console.Write(value[i].ToString().PadLeft(ped));
-                Console.Write("\n");
+                //for (int i = 0; i < h.Count; i++)
+                //    Console.Write(value[i].ToString().PadLeft(ped));
+                //Console.Write("\n");
 
                 for (int i = 0; i < h.Count; i++)
                     if (value[i] <= EPS)
                         end++;
             } while (end < h.Count && (xlast - x).Norm() > EPS);
 
-            Console.WriteLine("\n\nEPS: " + EPS);
-            Console.WriteLine("x0: \t(" + p0.x + " , " + p0.y + ")");
-            Console.WriteLine("Iter: " + LastIters);
-            Console.WriteLine("Func iter: " + FuncIters);
-            Console.WriteLine("Res: \t(" + x.x + " , " + x.y + ")");
-            Console.WriteLine("Func: " + func(x));
+            //Console.WriteLine("\n\nEPS: " + EPS);
+            //Console.WriteLine("x0: \t(" + p0.x + " , " + p0.y + ")");
+            //Console.WriteLine("Iter: " + LastIters);
+            //Console.WriteLine("Func iter: " + FuncIters);
+            //Console.WriteLine("Res: \t(" + x.x + " , " + x.y + ")");
+            //Console.WriteLine("Func: " + func(x));
 
             return x;
         }
+        /// <summary>
+        /// Метод барьерных функций
+        /// </summary>
+        /// <param name="func">Основная функция</param>
+        /// <param name="h">Функции барьеров</param>
+        /// <param name="p0">Начальная точка поиска</param>
+        /// <returns>Минимальное значение в заданной области, ограничкнной барьерными функциями</returns>
         static public Point Solve_Barrier_function(Func<Point, double> func, List<Func<Point, double>> h, Point p0 = new Point())
         {
             Point x = p0;
@@ -214,7 +419,12 @@ namespace csharp_lab1
             return x;
         }
 
-
+        /// <summary>
+        /// Метод поиска минимума на 2d метдом Гаусса
+        /// </summary>
+        /// <param name="func">Функция</param>
+        /// <param name="p0">Начальная точка</param>
+        /// <returns>Минимальное значение в заданной области</returns>
         static public Point Gause(Func<Point, double> func, Point p0 = new Point())
         {
             Point x = p0;
@@ -253,12 +463,13 @@ namespace csharp_lab1
             return x;
         }
 
-        //static public Point Pauel()
-
         #endregion
-
         #region lab2
+        //Тут Point может представляться не только как точка, но и как вектор
 
+        /// <summary>
+        /// Транспонированный вектор (Опирции умножения вектора и транспонированного вектора различны)
+        /// </summary>
         public struct PointT
         {
             public PointT(double x0 = 0, double y0 = 0)
@@ -269,6 +480,7 @@ namespace csharp_lab1
             public double y { set; get; }
 
         }
+
         public struct Matrix
         {
             // xx xy
@@ -307,7 +519,14 @@ namespace csharp_lab1
             }
         }
 
-        static public Point Devidona_Fletchera_Paualla_Metod(Func<Point, double> func, Func<Point, Point> Grad, Point p0 = new Point())
+        /// <summary>
+        /// Метод многомерного поиска минимума Дивидона-Флетчера-Пауэлла на 2d
+        /// </summary>
+        /// <param name="func"> Функция на которой ищется минимум </param>
+        /// <param name="p0"> Начальное значение </param>
+        /// <param name="Grad"> Градиент (Счас считатся численно)</param>
+        /// <returns>Минимальное значение в заданной области</returns>
+        static public Point Devidona_Fletchera_Paualla_Metod(Func<Point, double> func, Point p0 = new Point(), Func<Point, Point> Grad = null)
         {
             Point x = p0, z;
             Point dx, dg;
@@ -316,18 +535,16 @@ namespace csharp_lab1
             Matrix H = new Matrix(0, 0, 0, 0);
 
             double lamda;
-            Point S = -Grad(x);
+            Point S = -Gradient(func, x);// -Grad(x);
             Point gradt = -S;
             Point gradlast = gradt;
 
             Func<double, double> f;
-            LastIters = 0;
-            FuncIters = 0;
 
             double ft = func(x);
             double flast = ft;
             int ped = 22;
-            Console.WriteLine("i".PadLeft(4) + "(x, y)".PadLeft(ped) + "f(x, y)".PadLeft(ped) + "(s1 , s2)".PadLeft(ped) + "lambda".PadLeft(ped)+ "|x| |y|".PadLeft(ped) + "df".PadLeft(ped) + "".PadLeft(ped) +  "H^-1".PadRight(ped));
+            //Console.WriteLine("i".PadLeft(4) + "(x, y)".PadLeft(ped) + "f(x, y)".PadLeft(ped) + "(s1 , s2)".PadLeft(ped) + "lambda".PadLeft(ped)+ "|x| |y|".PadLeft(ped) + "df".PadLeft(ped) + "".PadLeft(ped) +  "H^-1".PadRight(ped));
 
 
             while (gradt.Norm() > EPS)
@@ -352,7 +569,7 @@ namespace csharp_lab1
                     x += dx;
 
                     gradlast = gradt;
-                    gradt = Grad(x);
+                    gradt = Gradient(func, x);// Grad(x);
 
                     dg = gradt - gradlast;
                     FuncIters += 4; // 4 раза для опредиления градиентат в точке
@@ -371,44 +588,51 @@ namespace csharp_lab1
                 LastIters++;
 
                 ft = func(x);
-                Console.WriteLine(LastIters.ToString().PadLeft(4) +
-                    x.x.ToString().PadLeft(ped) +
-                    ft.ToString().PadLeft(ped) +
-                    S.x.ToString().PadLeft(ped) +
-                    lamda.ToString().PadLeft(ped) +
-                    dx.y.ToString().PadLeft(ped) +
-                    (ft - flast).ToString().PadLeft(ped) +
-                    H.xx.ToString().PadLeft(ped) +
-                    H.xy.ToString().PadLeft(ped)
-                    );
-                Console.WriteLine(" ".PadLeft(4) +
-                    x.y.ToString().PadLeft(ped) +
-                    " ".PadLeft(ped) +
-                    S.y.ToString().PadLeft(ped) +
-                    " ".PadLeft(ped) +
-                    dx.y.ToString().PadLeft(ped) +
-                    " ".PadLeft(ped) +
-                    H.yx.ToString().PadLeft(ped) +
-                    H.yy.ToString().PadLeft(ped)
-                    );
-                Console.WriteLine();
+                //Console.WriteLine(LastIters.ToString().PadLeft(4) +
+                //    x.x.ToString().PadLeft(ped) +
+                //    ft.ToString().PadLeft(ped) +
+                //    S.x.ToString().PadLeft(ped) +
+                //    lamda.ToString().PadLeft(ped) +
+                //    dx.y.ToString().PadLeft(ped) +
+                //    (ft - flast).ToString().PadLeft(ped) +
+                //    H.xx.ToString().PadLeft(ped) +
+                //    H.xy.ToString().PadLeft(ped)
+                //    );
+                //Console.WriteLine(" ".PadLeft(4) +
+                //    x.y.ToString().PadLeft(ped) +
+                //    " ".PadLeft(ped) +
+                //    S.y.ToString().PadLeft(ped) +
+                //    " ".PadLeft(ped) +
+                //    dx.y.ToString().PadLeft(ped) +
+                //    " ".PadLeft(ped) +
+                //    H.yx.ToString().PadLeft(ped) +
+                //    H.yy.ToString().PadLeft(ped)
+                //    );
+                //Console.WriteLine();
 
                 flast = ft;
             }
 
-            Console.WriteLine("\n\nEPS: " + EPS);
-            Console.WriteLine("x0: \t(" + p0.x + " , " + p0.y + ")");
-            Console.WriteLine("Iter: " + LastIters);
-            Console.WriteLine("Func iter: " + FuncIters);
-            Console.WriteLine("Res: \t(" + x.x + " , " + x.y + ")");
-            Console.WriteLine("Func: " + func(x));
+            //Console.WriteLine("\n\nEPS: " + EPS);
+            //Console.WriteLine("x0: \t(" + p0.x + " , " + p0.y + ")");
+            //Console.WriteLine("Iter: " + LastIters);
+            //Console.WriteLine("Func iter: " + FuncIters);
+            //Console.WriteLine("Res: \t(" + x.x + " , " + x.y + ")");
+            //Console.WriteLine("Func: " + func(x));
             return x;
         }
 
-        static public Point MSG_Fletchera_Riversa(Func<Point, double> func, Func<Point, Point> Grad, Point p0 = new Point())
+        /// <summary>
+        /// Метод многомерного поиска минимума Дивидона-Флетчера-Пауэлла на 2d
+        /// </summary>
+        /// <param name="func"> Функция на которой ищется минимум </param>
+        /// <param name="p0"> Начальное значение </param>
+        /// <param name="Grad"> Градиент (Счас считатся численно)</param>
+        /// <returns>Минимальное значение в заданной области</returns>
+        static public Point MSG_Fletchera_Riversa(Func<Point, double> func, Point p0 = new Point(), Func<Point, Point> Grad = null)
         {
             Point x = p0;
-            Point S = -Grad(x);
+            Point S = -Gradient(func, x);
             LastIters = 0;
             FuncIters = 0;
             double w;
@@ -419,7 +643,7 @@ namespace csharp_lab1
             Point gradlast = gradt;
 
             int ped = 22;
-            Console.WriteLine("i".PadLeft(4) + "(x, y)".PadLeft(ped) + "f(x, y)".PadLeft(ped) + "(s1 , s2)".PadLeft(ped) + "lambda".PadLeft(ped) + "|x| |y|".PadLeft(ped) + "df".PadLeft(ped) + "grad(x, y)".PadLeft(ped));
+           // Console.WriteLine("i".PadLeft(4) + "(x, y)".PadLeft(ped) + "f(x, y)".PadLeft(ped) + "(s1 , s2)".PadLeft(ped) + "lambda".PadLeft(ped) + "|x| |y|".PadLeft(ped) + "df".PadLeft(ped) + "grad(x, y)".PadLeft(ped));
 
             double ft = func(x);
             double flast = ft;
@@ -443,7 +667,7 @@ namespace csharp_lab1
                 if (gradlast.Norm() == 0)
                     break;
 
-                gradt = Grad(x);
+                gradt = Gradient(func, x);
                 FuncIters += 4; // 4 раза для опредиления градиентат в точке
                 if (gradlast.Norm() != 0)
                 {
@@ -454,25 +678,25 @@ namespace csharp_lab1
 
                 flast = ft;
                 ft = func(x);
-                Console.WriteLine(LastIters.ToString().PadLeft(4) +
-                    x.x.ToString().PadLeft(ped) +
-                    ft.ToString().PadLeft(ped) +
-                    S.x.ToString().PadLeft(ped) +
-                    lamda.ToString().PadLeft(ped) +
-                    (lamda * S).x.ToString().PadLeft(ped) +
-                    (ft - flast).ToString().PadLeft(ped) +
-                    gradt.x.ToString().PadLeft(ped)
-                    );
-                Console.WriteLine(" ".PadLeft(4) +
-                    x.y.ToString().PadLeft(ped) +
-                    " ".PadLeft(ped) +
-                    S.y.ToString().PadLeft(ped) +
-                    " ".PadLeft(ped) +
-                    (lamda * S).y.ToString().PadLeft(ped) +
-                    " ".PadLeft(ped) +
-                    gradt.y.ToString().PadLeft(ped)
-                    );
-                Console.WriteLine();
+                //Console.WriteLine(LastIters.ToString().PadLeft(4) +
+                //    x.x.ToString().PadLeft(ped) +
+                //    ft.ToString().PadLeft(ped) +
+                //    S.x.ToString().PadLeft(ped) +
+                //    lamda.ToString().PadLeft(ped) +
+                //    (lamda * S).x.ToString().PadLeft(ped) +
+                //    (ft - flast).ToString().PadLeft(ped) +
+                //    gradt.x.ToString().PadLeft(ped)
+                //    );
+                //Console.WriteLine(" ".PadLeft(4) +
+                //    x.y.ToString().PadLeft(ped) +
+                //    " ".PadLeft(ped) +
+                //    S.y.ToString().PadLeft(ped) +
+                //    " ".PadLeft(ped) +
+                //    (lamda * S).y.ToString().PadLeft(ped) +
+                //    " ".PadLeft(ped) +
+                //    gradt.y.ToString().PadLeft(ped)
+                //    );
+                //Console.WriteLine();
             }
 
             Console.WriteLine("EPS: " + EPS);
@@ -485,6 +709,13 @@ namespace csharp_lab1
             return x;
         }
 
+        /// <summary>
+        /// Метод порабул для одномерного поиска
+        /// </summary>
+        /// <param name="x1">1 точка</param>
+        /// <param name="x3">2 точка</param>
+        /// <param name="f">Функция</param>
+        /// <returns>Минимальное значение на заданном промежутку</returns>
         public static double Solve_Parabola(double x1, double x3, Func<double, double> f)
         {
             //LastSteps.Clear();
@@ -523,20 +754,37 @@ namespace csharp_lab1
             return x;
         }
 
+
         static private Point Gradient(Func<Point, double> func, Point p)
         {
             Point g;
 
-            double h = EPS / 20;
+            double h = 1e-10 / 20.0;
 
             g = new Point((func(new Point(p.x + h, p.y)) - func(new Point(p.x - h, p.y))) / (2 * h), (func(new Point(p.x, p.y + h)) - func(new Point(p.x, p.y - h))) / (2 * h));
 
             return g;
         }
+        static private Point Graditnt2(Func<Point, double> func, Point p)
+        {
+            Point g;
 
+            double h = 1e-10 / 20.0;
+
+            g = new Point((Gradient(func, new Point(p.x + h, p.y)).x - Gradient(func, new Point(p.x - h, p.y)).x) / (2 * h), (Gradient(func, new Point(p.x, p.y + h)).y - Gradient(func, new Point(p.x, p.y - h)).y) / (2 * h));
+
+            return g;
+        }
         #endregion
         #region lab1
 
+        /// <summary>
+        /// Метод Дихотомии, одномерного поиска
+        /// </summary>
+        /// <param name="a">1 точка</param>
+        /// <param name="b">2 точка</param>
+        /// <param name="f">Функция</param>
+        /// <returns>Минимальное значение на заданном промежутку</returns>
         public static double Solv_Dihotom(double a, double b, Func<double, double> f)
         {
             LastIters = 0;
@@ -565,6 +813,13 @@ namespace csharp_lab1
             return (a+b) / 2;
         }
 
+        /// <summary>
+        /// Метод залотого сечения, одномерного поиска
+        /// </summary>
+        /// <param name="a">1 точка</param>
+        /// <param name="b">2 точка</param>
+        /// <param name="f">Функция</param>
+        /// <returns>Минимальное значение на заданном промежутку</returns>
         public static double Solve_GoldSech(double a, double b, Func<double, double> f)
         {
             double c = (3.0 - Math.Sqrt(5)) / 2d;
@@ -603,6 +858,13 @@ namespace csharp_lab1
             return (a + b) / 2d;
         }
 
+        /// <summary>
+        /// Метод Фибоначи, одномерного поиска
+        /// </summary>
+        /// <param name="a">1 точка</param>
+        /// <param name="b">2 точка</param>
+        /// <param name="f">Функция</param>
+        /// <returns>Минимальное значение на заданном промежутку</returns>
         public static double Solve_Fibanachi(double a, double b, Func<double, double> f)
         {
             double c = Math.Sqrt(5);
@@ -655,11 +917,17 @@ namespace csharp_lab1
             return (a + b) / 2d;
         }
 
+        /// <summary>
+        /// Поиск отрезка содержащего минимум
+        /// </summary>
+        /// <param name="x0"> Начальное значение </param>
+        /// <param name="f"> Функция на которой ищется минимум </param>
+        /// <returns> Отрезок от x до y, который содержит минимум </returns>
         public static Point Find_Line(double x0, Func<double, double> f)
         {
             //Console.WriteLine("\nX0 = " + x0 + "\n");
             Point p;
-            double maxH = 1e+10;
+            double maxH = 1e+5;
             int i = 0;
             double last = x0;
             double h = EPS / 2;
